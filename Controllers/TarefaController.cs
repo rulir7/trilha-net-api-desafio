@@ -43,7 +43,10 @@ namespace TrilhaApiDesafio.Controllers
         {
             // TODO: Buscar  as tarefas no banco utilizando o EF, que contenha o titulo recebido por parâmetro
             // Dica: Usar como exemplo o endpoint ObterPorData
-            var tarefas = _context.Tarefas.Where(x => x.Titulo.Contains(titulo)).ToList();
+            var tarefas = _context.Tarefas.Where(x => x.Titulo.ToUpper().Contains(titulo.ToUpper()));
+            if (tarefas == null)
+                return NotFound();
+
             return Ok(tarefas);
         }
 
@@ -51,6 +54,9 @@ namespace TrilhaApiDesafio.Controllers
         public IActionResult ObterPorData(DateTime data)
         {
             var tarefa = _context.Tarefas.Where(x => x.Data.Date == data.Date);
+            if (tarefa == null)
+                return NotFound();
+
             return Ok(tarefa);
         }
 
@@ -59,7 +65,9 @@ namespace TrilhaApiDesafio.Controllers
         {
             // TODO: Buscar  as tarefas no banco utilizando o EF, que contenha o status recebido por parâmetro
             // Dica: Usar como exemplo o endpoint ObterPorData
-            var tarefas = _context.Tarefas.Where(x => x.Status == status).ToList();
+            var tarefas = _context.Tarefas.Where(x => x.Status == status);
+            if (tarefas == null)
+                return NotFound();
             return Ok(tarefas);
         }
 
@@ -76,6 +84,21 @@ namespace TrilhaApiDesafio.Controllers
 
 
             return CreatedAtAction(nameof(ObterPorId), new { id = tarefa.Id }, tarefa);
+        }
+        // Adicionar um novo endpoint para a lista de tarefas
+        [HttpPost("Lista")]
+        public IActionResult CriarLista(List<Tarefa> tarefas)
+        {
+            foreach (var tarefa in tarefas)
+            {
+                if (tarefa.Data == DateTime.MinValue)
+                    return BadRequest(new { Erro = "A data da tarefa não pode ser vazia" });
+                _context.Tarefas.Add(tarefa);
+            }
+
+            _context.SaveChanges();
+
+            return Ok("Lista inserida com sucesso");
         }
 
         [HttpPut("{id}")]
@@ -96,8 +119,10 @@ namespace TrilhaApiDesafio.Controllers
             tarefaBanco.Data = tarefa.Data;
             tarefaBanco.Status = tarefa.Status;
 
+            _context.Tarefas.Update(tarefaBanco);
             _context.SaveChanges();
-            return Ok();
+
+            return Ok(tarefaBanco);
         }
 
         [HttpDelete("{id}")]
@@ -112,6 +137,7 @@ namespace TrilhaApiDesafio.Controllers
 
             _context.Tarefas.Remove(tarefaBanco);
             _context.SaveChanges();
+
             return NoContent();
         }
     }
